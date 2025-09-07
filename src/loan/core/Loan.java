@@ -3,6 +3,7 @@ package loan.models;
 import loan.utils.IDGenerator;
 import loan.core.Repayment;
 
+import java.nio.ReadOnlyBufferException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,6 +17,7 @@ public abstract class Loan{
     protected double outstandingBalance;
     protected String status;
     protected List<Repayment> repaymentSchedule;
+    protected List<Repayment> repayments;
     protected LocalDate sanctionDate;
 
     public Loan(){
@@ -37,6 +39,7 @@ public abstract class Loan{
         this.status = "Active";
         this.sanctionDate = LocalDate.now();
         this.repaymentSchedule = new ArrayList<>();
+        this.repayments = new ArrayList<>();
     }
 
     public String getLoanId(){
@@ -67,6 +70,10 @@ public abstract class Loan{
         return repaymentSchedule;
     }
 
+    public List<Repayment> getRepayments(){
+        return repayments;
+    }
+
     public LocalDate getSanctionDate(){
         return sanctionDate;
     }
@@ -76,12 +83,17 @@ public abstract class Loan{
 
     public void makePayment(double amountPaid){
         if(amountPaid > outstandingBalance){
-            System.out.println("Payment amount exceeds oustanding balance!");
+            System.out.println("Payment amount exceeds oustanding balance! Adjusting to: " + outstandingBalance);
+            amountPaid = outstandingBalance;
             return;
         }
+
+        Repayment repayment = new Repayment(outstandingBalance);
+        repayments.add(repayment);
+
         outstandingBalance -= amountPaid;
         System.out.println("Payment of " + amountPaid + " made. Remaining balance is: " + outstandingBalance);
-        if(outstandingBalance == 0){
+        if(outstandingBalance <= 0){
             status = "Closed";
             System.out.println("Loan " + loanId + " is fully repaid!");
         }
