@@ -94,13 +94,24 @@ public class Borrower{
         System.out.println("Credit Score: " + creditScore);
         System.out.println("Registration Date: " + registrationDate);
         System.out.println("Total debt: " + calculateTotalDebt());
-        System.out.println("Loans: ");
+        System.out.println("\nLoans: ");
         if(loans.isEmpty()){
             System.out.println("No loans yet!");
         }
         else{
             for(Loan loan : loans){
                 System.out.println(" -> " + loan);
+
+                List<Repayment> repayments = loan.getRepayments();
+                if(repayments.isEmpty()) {
+                    System.out.println("    No repayments yet.");
+                }
+                else{
+                    System.out.println("    Repayments:");
+                    for (Repayment r : repayments) {
+                        System.out.println("       " + r);
+                    }
+                }
             }
         }
         System.out.println("------------------------------\n");
