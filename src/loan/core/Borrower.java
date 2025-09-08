@@ -1,13 +1,11 @@
 package loan.core;
 
-import loan.models.Loan;
-import loan.exceptions.EligibilityException;
-import loan.utils.IDGenerator;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import loan.exceptions.EligibilityException;
+import loan.utils.IDGenerator;
 
 public class Borrower{
     private String borrowerId;
@@ -36,7 +34,8 @@ public class Borrower{
         this.phoneNumber = sc.nextLine();
 
         System.out.print("Enter the monthly income: ");
-        this.monthlyIncome = sc.nextDouble();
+        String incomeString = sc.nextLine().replace(",", "");
+        this.monthlyIncome = Double.parseDouble(incomeString);
 
         System.out.print("Enter the credit score (300-900): ");
         this.creditScore = sc.nextInt();
