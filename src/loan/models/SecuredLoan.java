@@ -1,10 +1,9 @@
 package loan.models;
 
-import loan.core.Repayment;
-import loan.utils.IDGenerator;
-
 import java.time.LocalDate;
 import java.util.Scanner;
+import loan.core.Loan;
+import loan.core.Repayment;
 
 public class SecuredLoan extends Loan{
     private String collateralDescription;
@@ -35,7 +34,7 @@ public class SecuredLoan extends Loan{
     public void calculateEMI(){
         double monthlyRate = (interestRate / 100.0) / 12.0;
         if(tenure <= 0) emi = round(amount);
-        else if(monthlyRate == 0) emi = rouund(amount/tenure);
+        else if(monthlyRate == 0) emi = round(amount/tenure);
         else{
             double r = monthlyRate;
             int n = tenure;

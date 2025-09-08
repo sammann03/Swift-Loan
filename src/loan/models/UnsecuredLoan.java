@@ -1,10 +1,9 @@
 package loan.models;
 
-import loan.core.Repayment;
-import loan.utils.IDGenerator;
-
 import java.time.LocalDate;
 import java.util.Scanner;
+import loan.core.Loan;
+import loan.core.Repayment;
 
 public class UnsecuredLoan extends Loan{
     private String purpose;
@@ -36,7 +35,7 @@ public class UnsecuredLoan extends Loan{
             double r = monthlyRate;
             int n = tenure;
             double factor = Math.pow(1 + r, n);
-            double raw = (amount * r * facotr) / (factor - 1);
+            double raw = (amount * r * factor) / (factor - 1);
             emi = round(raw);
         }
         System.out.println("Calculated monthly EMI (Unsecured): " + emi);
