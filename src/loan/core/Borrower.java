@@ -1,5 +1,6 @@
 package loan.core;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -7,7 +8,9 @@ import java.util.Scanner;
 import loan.exceptions.EligibilityException;
 import loan.utils.IDGenerator;
 
-public class Borrower{
+public class Borrower implements Serializable{
+    private static final long serialVersionUID = 1L;
+
     private String borrowerId;
     private String name;
     private String address;

@@ -1,5 +1,6 @@
 package loan.core;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,12 +8,15 @@ public class Portfolio{
     private List<Borrower> borrowers;
     
     public Portfolio(){
-        this.borrowers = new ArrayList<>();
+        List<Borrower> loaded = StorageManager.loadData("borrowers.dat");
+        if(loaded != null) borrowers = loaded;
+        else borrowers = new ArrayList<>();
     }
 
     public void addBorrower(){
         Borrower borrower = new Borrower();
         borrowers.add(borrower);
+        StorageManager.saveData("borrowers.dat",(Serializable) borrowers);
         System.out.println("Borrower " + borrower.getName() + " added successfully!\n");
     }
 
@@ -22,6 +26,7 @@ public class Portfolio{
             return;
         }
         borrowers.add(borrower);
+        StorageManager.saveData("borrowers.dat",(Serializable) borrowers);
         System.out.println("Borrower " + borrower.getName() + " added successfully!\n");
     }
 
@@ -58,5 +63,9 @@ public class Portfolio{
 
     public int getTotalBorrowers(){
         return borrowers.size();
+    }
+
+    public void savePortfolio(){
+        StorageManager.saveData("borrowers.dat",(Serializable) borrowers);
     }
 }

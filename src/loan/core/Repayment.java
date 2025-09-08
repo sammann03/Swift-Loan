@@ -1,9 +1,12 @@
 package loan.core;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.Scanner;
 
-public class Repayment{
+public class Repayment implements Serializable{
+    private static final long serialVersionUID = 1L;
+
     private String repaymentId;
     private LocalDate date;
     private double amount;

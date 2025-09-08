@@ -31,6 +31,7 @@ public class Main{
                 case 1 -> {
                     Borrower borrower = new Borrower();
                     portfolio.addBorrower(borrower);
+                    portfolio.savePortfolio();
                 }
 
                 case 2 -> {
@@ -55,7 +56,9 @@ public class Main{
                         }
                         else{
                             System.out.println("Invalid Loan type!");
+                            break;
                         }
+                        portfolio.savePortfolio();
                     }
                     catch(EligibilityException e){
                         System.out.println("Loan application failed: " + e.getMessage());
@@ -94,6 +97,7 @@ public class Main{
                     sc.nextLine();
 
                     loan.makePayment(amount);
+                    portfolio.savePortfolio();
                 }
 
                 case 4 -> {
@@ -115,6 +119,8 @@ public class Main{
                 case 6 -> {
                     running = false;
                     System.out.println("Exiting SwiftLoan. Goodbye!");
+                    // ✅ Save before exiting
+                    portfolio.savePortfolio();
                 }
                 default -> System.out.println("Invalid Choice, try again!");
             }

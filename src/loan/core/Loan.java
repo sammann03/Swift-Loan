@@ -1,12 +1,15 @@
 package loan.core;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 import loan.utils.IDGenerator;
 
-public abstract class Loan{
+public abstract class Loan implements Serializable{
+    private static final long serialVersionUID = 1L;
+
     protected String loanId;
     protected double amount;
     protected double interestRate;
