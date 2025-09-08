@@ -1,13 +1,10 @@
-package loan.models;
+package loan.core;
 
-import loan.utils.IDGenerator;
-import loan.core.Repayment;
-
-import java.nio.ReadOnlyBufferException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import loan.utils.IDGenerator;
 
 public abstract class Loan{
     protected String loanId;
@@ -27,13 +24,16 @@ public abstract class Loan{
         System.out.println("Creating Loan ID: " + loanId);
 
         System.out.print("Enter loan amount: ");
-        this.amount = sc.nextDouble();
+        String loanAmount = sc.nextLine().replace(",", "");
+        this.amount = Double.parseDouble(loanAmount);
 
         System.out.print("Enter annual interest (in %): ");
         this.interestRate = sc.nextDouble();
+        sc.nextLine();
 
         System.out.print("Enter tenure (in months): ");
         this.tenure = sc.nextInt();
+        sc.nextLine();
 
         this.outstandingBalance = amount;
         this.status = "Active";
