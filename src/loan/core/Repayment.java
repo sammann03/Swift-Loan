@@ -28,6 +28,13 @@ public class Repayment{
         this.status = sc.nextLine().trim().toUpperCase();
     }
 
+    public Repayment(LocalDate dueDate, double amount){
+        this.repaymentId = "R -> " + System.currentTimeMillis();
+        this.date = dueDate;
+        this.amount = amount;
+        this.status = "Pending";
+    }
+
     public String getRepaymentId(){
         return repaymentId;
     }
