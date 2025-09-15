@@ -4,10 +4,14 @@ import java.util.UUID;
 
 public class IDGenerator{
     public static String generateBorrowerId(){
-        return "B -> " + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        return "B" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 
     public static String generateLoanId(){
-        return "L -> " + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        return "Loan" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+    }
+
+    public static String generateLenderId(){
+        return "L" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 }

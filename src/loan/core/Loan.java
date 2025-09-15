@@ -19,6 +19,8 @@ public abstract class Loan implements Serializable{
     protected List<Repayment> repaymentSchedule;
     protected List<Repayment> repayments;
     protected LocalDate sanctionDate;
+    protected List<LenderFunding> lenderFundings;
+    protected double riskLevel;
 
     public Loan(){
         Scanner sc = new Scanner(System.in);
@@ -43,6 +45,7 @@ public abstract class Loan implements Serializable{
         this.sanctionDate = LocalDate.now();
         this.repaymentSchedule = new ArrayList<>();
         this.repayments = new ArrayList<>();
+        this.lenderFundings = new ArrayList<>();
     }
 
     public String getLoanId(){
@@ -65,6 +68,10 @@ public abstract class Loan implements Serializable{
         return outstandingBalance;
     }
 
+    public double getRiskLevel(){
+        return riskLevel;
+    }
+
     public String getStatus(){
         return status;
     }
@@ -81,6 +88,52 @@ public abstract class Loan implements Serializable{
         return sanctionDate;
     }
 
+    public List<LenderFunding> getLenderFundings(){
+        return lenderFundings;
+    }
+
+    public static class LenderFunding implements Serializable{
+        private String loanId;
+        public String lenderId;
+        public double amount;
+        public LenderFunding(String lenderId, double amount){
+            this.lenderId = lenderId;
+            this.amount = amount;
+        }
+
+        public String getLoanId(){
+            return loanId;
+        }
+
+        public String getLenderId(){
+            return lenderId;
+        }
+
+        public double getAmountFunded(){
+            return amount;
+        }
+
+        public void addAmount(double delta){
+            this.amount += delta;
+        }
+
+        @Override
+        public String toString(){
+            return "{loanId=" + loanId + ", lenderId=" + lenderId + ", amount=" + amount + "}";
+        }
+    }
+
+    public void addFunding(LenderFunding funding){
+        if(funding == null) return;
+        for(LenderFunding lf : lenderFundings){
+            if(lf.getLenderId().equals(funding.getLenderId())){
+                lf.addAmount(funding.getAmountFunded());
+                return;
+            }
+        }
+        lenderFundings.add(funding);
+    }
+
     public abstract void calculateEMI();
     public abstract void generateRepaymentSchedule();
 
@@ -88,14 +141,41 @@ public abstract class Loan implements Serializable{
         if(amountPaid > outstandingBalance){
             System.out.println("Payment amount exceeds oustanding balance! Adjusting to: " + outstandingBalance);
             amountPaid = outstandingBalance;
+        }
+
+        double monthlyRate = (interestRate / 100) / 12;
+        double interestComponent = outstandingBalance * monthlyRate;
+        double principalComponent = amountPaid - interestComponent;
+        if(principalComponent < 0) principalComponent = 0;
+
+        if(amountPaid < interestComponent){
+            System.out.println("Payment is too small! It doesn't even cover monthly interest.");
             return;
         }
 
         Repayment repayment = new Repayment(outstandingBalance);
+        repayment.setPrincipalComponent(principalComponent); 
+        repayment.setInterestComponent(interestComponent);
         repayments.add(repayment);
+        outstandingBalance -= principalComponent;
 
-        outstandingBalance -= amountPaid;
-        System.out.println("Payment of " + amountPaid + " made. Remaining balance is: " + outstandingBalance);
+        double totalFunded = lenderFundings.stream().mapToDouble(LenderFunding::getAmountFunded).sum();
+        for(LenderFunding lf : lenderFundings){
+            Lender lender = LenderPortfolio.findLenderById(lf.lenderId);
+            if(lender != null && totalFunded > 0){
+                double proportion = lf.amount / totalFunded;
+                double principalShare = principalComponent * proportion;
+                double interestShare = interestComponent * proportion;
+
+                lender.addEarnings(interestShare);
+                lender.reduceInvestment(principalShare);
+                lf.amount -= principalShare;
+                lender.updateLoanFunding(loanId, -principalShare);
+            }
+        }
+
+        System.out.println("Payment of " + amountPaid + " made [Principal: " + principalComponent + ", Interest: " + interestComponent + "]. Remaining balance is: " + outstandingBalance);
+
         if(outstandingBalance <= 0){
             status = "Closed";
             System.out.println("Loan " + loanId + " is fully repaid!");
@@ -110,14 +190,20 @@ public abstract class Loan implements Serializable{
 
     @Override
     public String toString(){
-        return "Loan{" +
-                "loanId='" + loanId + '\'' +
-                ", amount=" + amount +
-                ", interestRate=" + interestRate +
-                ", tenure=" + tenure +
-                ", outstandingBalance=" + outstandingBalance +
-                ", status='" + status + '\'' +
-                ", sanctionDate=" + sanctionDate +
-                "}";
-    }
+        StringBuilder sb = new StringBuilder();
+        sb.append("Loan{loanId='").append(loanId)
+        .append("', amount=").append(amount)
+        .append(", interestRate=").append(interestRate)
+        .append(", tenure=").append(tenure)
+        .append(", outstandingBalance=").append(outstandingBalance)
+        .append(", status='").append(status)
+        .append("', sanctionDate=").append(sanctionDate)
+        .append(", lenderFundings=[");
+        for(LenderFunding lf : lenderFundings){
+            sb.append("{lenderId=").append(lf.lenderId)
+            .append(", amount=").append(lf.amount).append("}, ");
+        }
+        sb.append("]}");
+        return sb.toString();
+    } 
 }

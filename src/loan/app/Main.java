@@ -5,6 +5,8 @@ import loan.core.Borrower;
 import loan.core.Lender;
 import loan.core.LenderPortfolio;
 import loan.core.Portfolio;
+import loan.core.Transaction;
+import loan.core.TransactionLedger;
 import loan.exceptions.EligibilityException;
 import loan.models.SecuredLoan;
 import loan.models.UnsecuredLoan;
@@ -14,6 +16,7 @@ public class Main{
         Scanner sc = new Scanner(System.in);
         Portfolio portfolio = new Portfolio();
         LenderPortfolio lenderPortfolio = new LenderPortfolio();
+        TransactionLedger ledger = TransactionLedger.loadLedger();
         boolean running = true;
 
         while(running){
@@ -28,7 +31,8 @@ public class Main{
             System.out.println("8. View All Lenders");
             System.out.println("9. Deposit to Lender");
             System.out.println("10. Withdraw from Lender");
-            System.out.println("11. Exit");
+            System.out.println("11. View Global Transaction Ledger");
+            System.out.println("12. Exit");
 
             System.out.print("Choose an option: ");
 
@@ -81,8 +85,9 @@ public class Main{
                     int fundingChoice = sc.nextInt();
                     sc.nextLine();
 
-                    if(fundingChoice == 1){
-                        while (true){ 
+                    if(fundingChoice == 1){ // Manual funding
+                        double remainingLoanAmount = loan.getAmount();
+                        while (remainingLoanAmount > 0){ 
                             System.out.print("Enter Lender ID (or 'done' to finish): ");
                             String lenderId = sc.nextLine();
                             if(lenderId.equalsIgnoreCase("done")) break;
@@ -92,32 +97,72 @@ public class Main{
                                 System.out.println("Lender not found!");
                                 continue;
                             }
-                            System.out.print("Enter amount to invest: ");
+
+                            System.out.println("Lender " + lender.getName() + " has capital: " + lender.getCapital());
+                            System.out.print("Enter amount to invest (max " + Math.min(remainingLoanAmount, lender.getCapital()) + "): ");
                             double amt = sc.nextDouble();
                             sc.nextLine();
 
+                            if(amt <= 0 || amt > lender.getCapital() || amt > remainingLoanAmount){
+                                System.out.println("Invalid amount, try again.");
+                                continue;
+                            }
+
                             lender.investInLoan(loan, amt);
                             lenderPortfolio.saveLenderPortfolio();
+                            ledger.addTransaction(new Transaction("INVESTMENT", amt, lender.getCapital(), "Lender " + lender.getName() + " funded Loan " + loan.getLoanId()));
+                            remainingLoanAmount -= amt;
+                            System.out.println("Remaining loan amount to fund: " + remainingLoanAmount);
+
+                            if(remainingLoanAmount <= 0){
+                                System.out.println("Loan fully funded!");
+                                break;
+                            }
                         }
                     }
                     else if(fundingChoice == 2){
-                        var allLenders = lenderPortfolio.getLenders();
+                        var allLenders = lenderPortfolio.getAllLenders();
                         if(allLenders.isEmpty()){
                             System.out.println("No lenders available for auto assignment!");
                         }
                         else{
-                            double amountPerLender = loan.getAmount() / allLenders.size();
-                            boolean allCapable = allLenders.stream().allMatch(l -> l.getCapital() >= amountPerLender);
-                            
-                            if(!allCapable){
-                                System.out.println("Auto-assingment failed: Not all lenders have enough capital!");
+                            double loanAmount = loan.getAmount();
+                            double remainingAmount = loanAmount;
+                            java.util.Collections.shuffle(allLenders);
+
+                            for(Lender lender : allLenders){
+                                if(remainingAmount <= 0) break;
+                                double minShare = loanAmount * 0.05;
+                                double investable = Math.min(minShare, lender.getCapital() * lender.getMaxExposurePercent());
+                                if(investable > 0 && lender.getRiskAppetite() >= loan.getRiskLevel()){
+                                    lender.investInLoan(loan, investable);
+                                    remainingAmount -= investable;
+                                    ledger.addTransaction(new Transaction("INVESTMENT", investable, lender.getCapital(), "Auto-funding Loan " + loan.getLoanId() + " by Lender " + lender.getName()));
+                                }
+                            }
+
+                            double totalEligibleCapital = allLenders.stream().filter(l -> l.getRiskAppetite() >= loan.getRiskLevel()).mapToDouble(Lender::getCapital).sum();
+
+                            for(Lender lender : allLenders){
+                                if(remainingAmount <= 0) break;
+                                if(lender.getRiskAppetite() < loan.getRiskLevel()) continue;
+
+                                double proportionalShare = (lender.getCapital() / totalEligibleCapital) * remainingAmount;
+                                double cappedShare = Math.min(proportionalShare, lender.getCapital() * lender.getMaxExposurePercent());
+                                if(cappedShare > 0){
+                                    lender.investInLoan(loan, cappedShare);
+                                    remainingAmount -= cappedShare;
+                                    ledger.addTransaction(new Transaction("INVESTMENT", cappedShare, lender.getCapital(), "Auto-funding Loan " + loan.getLoanId() + " by Lender " + lender.getName()));
+                                }
+                            }
+
+                            lenderPortfolio.saveLenderPortfolio();
+
+                            if(remainingAmount > 0){
+                                System.out.println("Loan could not be fully funded. Shortfall: " + remainingAmount);
                             }
                             else{
-                                for(Lender lender : allLenders){
-                                    lender.investInLoan(loan, amountPerLender);
-                                }
-                                lenderPortfolio.saveLenderPortfolio();
-                                System.out.println("Auto-assigned loan funding across all lenders!");
+                                System.out.println("Smart auto-assigned loan funding completed!");
                             }
                         }
                     }
@@ -156,6 +201,7 @@ public class Main{
 
                     loan.makePayment(amount);
                     portfolio.savePortfolio();
+                    ledger.addTransaction(new Transaction("REPAYMENT", amount, loan.getOutstandingBalance(), "Repayment for Loan " + loan.getLoanId() + " by Borrower " + borrower.getName()));
                 }
 
                 case 4 -> {
@@ -209,6 +255,7 @@ public class Main{
                     sc.nextLine();
                     lender.deposit(amount);
                     lenderPortfolio.saveLenderPortfolio();
+                    ledger.addTransaction(new Transaction("DEPOSIT", amount, lender.getCapital(), "Deposit for Lender " + lender.getName()));
                 }
 
                 case 10 -> {
@@ -224,13 +271,19 @@ public class Main{
                     sc.nextLine();
                     lender.withdraw(amount);
                     lenderPortfolio.saveLenderPortfolio();
+                    ledger.addTransaction(new Transaction("WITHDRAWAL", amount, lender.getCapital(), "Withdrawal for Lender " + lender.getName()));
                 }
 
                 case 11 -> {
+                    ledger.printAllTransactions();
+                }
+
+                case 12 -> {
                     running = false;
                     System.out.println("Exiting SwiftLoan. Goodbye!");
                     portfolio.savePortfolio();
                     lenderPortfolio.saveLenderPortfolio();
+                    ledger.saveLedger();
                 }
 
                 default -> System.out.println("Invalid Choice, try again!");

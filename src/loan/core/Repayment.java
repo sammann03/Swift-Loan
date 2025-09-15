@@ -11,6 +11,8 @@ public class Repayment implements Serializable{
     private LocalDate date;
     private double amount;
     private String status;
+    private double principalComponent;
+    private double interestComponent;
 
     public Repayment(double outstandingBalance){
         Scanner sc = new Scanner(System.in);
@@ -54,6 +56,22 @@ public class Repayment implements Serializable{
         return status;
     }
 
+    public double getPrincipalComponent(){
+        return principalComponent;
+    }
+
+    public double getInterestComponent(){
+        return interestComponent;
+    }
+
+    public void setPrincipalComponent(double principalComponent){
+        this.principalComponent = principalComponent;
+    }
+
+    public void setInterestComponent(double interestComponent){
+        this.interestComponent = interestComponent;
+    }
+
     @Override
     public String toString(){
         return "Repayment{" +
@@ -61,6 +79,8 @@ public class Repayment implements Serializable{
                 ", date=" + date +
                 ", amount=" + amount +
                 ", status='" + status + '\'' +
+                ", principal=" + principalComponent +
+                ", interest=" + interestComponent +
                 '}';
     }
 }
